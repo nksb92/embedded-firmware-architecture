@@ -49,6 +49,7 @@ void hal_init(void) {
 
   Wire.setSDA(PIN_SDA);
   Wire.setSCL(PIN_SCL);
+  Wire.setTimeout(5); // 5 ms bus timeout (prevents 1000 ms default hang per packet if I2C bus is stuck)
   Wire.begin();
   Wire.setClock(100000);
 

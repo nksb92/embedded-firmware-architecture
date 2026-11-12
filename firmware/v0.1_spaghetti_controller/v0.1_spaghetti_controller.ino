@@ -251,7 +251,11 @@ void loop() {
     display.println("%");
     display.setTextSize(1);
     display.setCursor(0, 52);
-    display.println("Turn: Adj | SW: Exit");
+    if (digitalRead(10) == LOW) {
+      display.println("ENC: PULSE | SW: Exit");
+    } else {
+      display.println("Turn: Adj  | SW: Exit");
+    }
   } else {
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
@@ -261,14 +265,14 @@ void loop() {
     display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
     display.setCursor(0, 16);
     display.print("Output:     ");
-    display.println(isOutputOn ? "ACTIVE (ON)" : "DISABLED");
+    display.println(isOutputOn ? "ACTIVE" : "DISABLED");
     display.setCursor(0, 28);
     display.print("Brightness: ");
     display.print(g_brightness);
     display.println("%");
     display.setCursor(0, 40);
     display.print("State:      ");
-    display.println(isLocked ? "LOCKED" : "OPERATIONAL");
+    display.println(isLocked ? "LOCKED" : "READY");
     display.setCursor(0, 52);
     display.println("Click SW for Settings");
   }
