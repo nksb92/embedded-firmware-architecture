@@ -48,18 +48,66 @@
     {
       "type": "wokwi-logic-analyzer",
       "id": "logic",
-      "top": -30,
-      "left": 105,
+      "top": -28.45,
+      "left": 153.6,
       "attrs": {}
     }
   ],
   "connections": [
-    [ "logic:GND", "pico:GND.6", "black", [ "h0" ] ],
-    [ "logic:D0", "pico:GP4", "blue", [ "h0" ] ],
-    [ "logic:D1", "pico:GP10", "purple", [ "h0" ] ],
-    [ "logic:D2", "pico:GP18", "gray", [ "h0" ] ],
-    [ "logic:D3", "pico:GP19", "gray", [ "h0" ] ],
-    [ "logic:D4", "pico:GP20", "gray", [ "h0" ] ],
+    [
+      "logic:GND",
+      "pico:GND.6",
+      "black",
+      [
+        "h-48",
+        "v70.35"
+      ]
+    ],
+    [
+      "logic:D0",
+      "pico:GP4",
+      "blue",
+      [
+        "h-172.8",
+        "v79.95"
+      ]
+    ],
+    [
+      "logic:D1",
+      "pico:GP10",
+      "purple",
+      [
+        "h-182.4",
+        "v147.15"
+      ]
+    ],
+    [
+      "logic:D2",
+      "pico:GP18",
+      "gray",
+      [
+        "h-19.2",
+        "v166.35"
+      ]
+    ],
+    [
+      "logic:D3",
+      "pico:GP19",
+      "gray",
+      [
+        "h-28.8",
+        "v147.15"
+      ]
+    ],
+    [
+      "logic:D4",
+      "pico:GP20",
+      "gray",
+      [
+        "h-38.4",
+        "v127.95"
+      ]
+    ],
     [
       "oled:GND",
       "pico:GND.1",
@@ -189,9 +237,8 @@
       "pico:3V3",
       "crimson",
       [
-        "h-57.6",
-        "v-28.8",
-        "v-100"
+        "h-48",
+        "v-140.85"
       ]
     ]
   ],

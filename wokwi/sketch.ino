@@ -259,14 +259,14 @@ void loop() {
     display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
     display.setCursor(0, 16);
     display.print("Output:     ");
-    display.println(isOutputOn ? "ACTIVE (ON)" : "DISABLED");
+    display.println(isOutputOn ? "ACTIVE" : "DISABLED");
     display.setCursor(0, 28);
     display.print("Brightness: ");
     display.print(g_brightness);
     display.println("%");
     display.setCursor(0, 40);
     display.print("State:      ");
-    display.println(isLocked ? "LOCKED" : "OPERATIONAL");
+    display.println(isLocked ? "LOCKED" : "READY");
     display.setCursor(0, 52);
     display.println("Click SW for Settings");
   }
