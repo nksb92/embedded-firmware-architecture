@@ -12,8 +12,8 @@ extern "C" {
 // Zero raw hardware register names or peripheral addresses.
 // ============================================================================
 
-void app_init(void);
-void app_update(void);
+void AppInit(void);
+void AppUpdate(void);
 
 #ifdef __cplusplus
 }

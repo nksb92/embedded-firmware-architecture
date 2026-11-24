@@ -16,31 +16,31 @@ extern "C" {
 // ============================================================================
 
 typedef enum {
-  HAL_PIN_ENC_A = 0,
-  HAL_PIN_ENC_B,
-  HAL_PIN_ENC_SW,
-  HAL_PIN_FAULT_BTN,
-  HAL_PIN_DBG_DISPLAY,
-  HAL_PIN_DBG_LED,
-  HAL_PIN_DBG_INPUT
-} hal_gpio_pin_t;
+  kHalPinEncA = 0,
+  kHalPinEncB,
+  kHalPinEncSw,
+  kHalPinFaultBtn,
+  kHalPinDbgDisplay,
+  kHalPinDbgLed,
+  kHalPinDbgInput
+} HalGpioPin;
 
 typedef enum {
-  HAL_GPIO_LOW  = 0,
-  HAL_GPIO_HIGH = 1
-} hal_gpio_level_t;
+  kHalGpioLow  = 0,
+  kHalGpioHigh = 1
+} HalGpioLevel;
 
-void hal_init(void);
+void HalInit(void);
 
-hal_gpio_level_t hal_gpio_read(hal_gpio_pin_t pin);
-void hal_gpio_write(hal_gpio_pin_t pin, hal_gpio_level_t level);
+HalGpioLevel HalGpioGet(HalGpioPin pin);
+void HalGpioSet(HalGpioPin pin, HalGpioLevel level);
 
-bool hal_i2c_write(uint8_t addr_7bit, const uint8_t *data, size_t len);
+bool HalI2cWrite(uint8_t addr_7bit, const uint8_t *data, size_t len);
 
-void hal_ws2812_write(const uint8_t *grb_data, size_t num_pixels);
+void HalWs2812Write(const uint8_t *grb_data, size_t num_pixels);
 
-uint32_t hal_get_time_ms(void);
-void hal_delay_ms(uint32_t ms);
+uint32_t HalTimeMsGet(void);
+void HalDelayMs(uint32_t ms);
 
 #ifdef __cplusplus
 }

@@ -17,115 +17,115 @@ typedef struct {
   bool has_fault;
   bool is_locked;
 
-  hal_gpio_level_t last_enc_a;
-  hal_gpio_level_t last_sw;
-  hal_gpio_level_t last_fault_btn;
-} app_context_t;
+  HalGpioLevel last_enc_a;
+  HalGpioLevel last_sw;
+  HalGpioLevel last_fault_btn;
+} AppContext;
 
-static app_context_t s_app;
+static AppContext app_ctx;
 
-void app_init(void) {
-  hal_init();
-  drv_led_init();
-  drv_ssd1306_init();
+void AppInit(void) {
+  HalInit();
+  DrvLedInit();
+  DrvSsd1306Init();
 
-  s_app.is_output_on = true;
-  s_app.is_menu_open = false;
-  s_app.is_editing  = false;
-  s_app.has_fault   = false;
-  s_app.is_locked   = false;
+  app_ctx.is_output_on = true;
+  app_ctx.is_menu_open = false;
+  app_ctx.is_editing   = false;
+  app_ctx.has_fault    = false;
+  app_ctx.is_locked    = false;
 
-  s_app.last_enc_a     = hal_gpio_read(HAL_PIN_ENC_A);
-  s_app.last_sw        = hal_gpio_read(HAL_PIN_ENC_SW);
-  s_app.last_fault_btn = hal_gpio_read(HAL_PIN_FAULT_BTN);
+  app_ctx.last_enc_a     = HalGpioGet(kHalPinEncA);
+  app_ctx.last_sw        = HalGpioGet(kHalPinEncSw);
+  app_ctx.last_fault_btn = HalGpioGet(kHalPinFaultBtn);
 }
 
-void app_update(void) {
+void AppUpdate(void) {
   // --------------------------------------------------------------------------
   // STEP 1: INPUT POLLING (PULSE CH4)
   // Still polling in the superloop! Misses pulses during OLED redraws.
   // --------------------------------------------------------------------------
-  hal_gpio_write(HAL_PIN_DBG_INPUT, HAL_GPIO_HIGH);
+  HalGpioSet(kHalPinDbgInput, kHalGpioHigh);
 
   // Read encoder pushbutton
-  hal_gpio_level_t sw_level = hal_gpio_read(HAL_PIN_ENC_SW);
-  if (sw_level == HAL_GPIO_LOW && s_app.last_sw == HAL_GPIO_HIGH) {
-    if (!s_app.is_editing) {
-      s_app.is_menu_open = true;
-      s_app.is_editing   = true;
+  HalGpioLevel sw_level = HalGpioGet(kHalPinEncSw);
+  if (sw_level == kHalGpioLow && app_ctx.last_sw == kHalGpioHigh) {
+    if (!app_ctx.is_editing) {
+      app_ctx.is_menu_open = true;
+      app_ctx.is_editing   = true;
     } else {
-      s_app.is_editing   = false;
-      s_app.is_menu_open = false;
+      app_ctx.is_editing   = false;
+      app_ctx.is_menu_open = false;
     }
   }
-  s_app.last_sw = sw_level;
+  app_ctx.last_sw = sw_level;
 
   // Read hardware fault button
-  hal_gpio_level_t fault_btn_level = hal_gpio_read(HAL_PIN_FAULT_BTN);
-  if (fault_btn_level == HAL_GPIO_LOW && s_app.last_fault_btn == HAL_GPIO_HIGH) {
-    s_app.has_fault = !s_app.has_fault;
-    if (s_app.has_fault) {
-      s_app.is_output_on = false; // E-stop cuts output in normal mode
+  HalGpioLevel fault_btn_level = HalGpioGet(kHalPinFaultBtn);
+  if (fault_btn_level == kHalGpioLow && app_ctx.last_fault_btn == kHalGpioHigh) {
+    app_ctx.has_fault = !app_ctx.has_fault;
+    if (app_ctx.has_fault) {
+      app_ctx.is_output_on = false; // E-stop cuts output in normal mode
     } else {
-      s_app.is_output_on = true;
+      app_ctx.is_output_on = true;
     }
   }
-  s_app.last_fault_btn = fault_btn_level;
+  app_ctx.last_fault_btn = fault_btn_level;
 
   // Read rotary encoder
-  hal_gpio_level_t enc_a = hal_gpio_read(HAL_PIN_ENC_A);
-  if (enc_a != s_app.last_enc_a && enc_a == HAL_GPIO_LOW) {
-    hal_gpio_level_t enc_b = hal_gpio_read(HAL_PIN_ENC_B);
-    int16_t current_brt = drv_led_get_brightness();
+  HalGpioLevel enc_a = HalGpioGet(kHalPinEncA);
+  if (enc_a != app_ctx.last_enc_a && enc_a == kHalGpioLow) {
+    HalGpioLevel enc_b = HalGpioGet(kHalPinEncB);
+    int16_t current_brt = DrvLedBrightnessGet();
 
     if (enc_b != enc_a) {
       // Clockwise
-      if (s_app.is_editing) {
-        // Validated API: drv_led_set_brightness cleanly clamps to 100 max
-        drv_led_set_brightness(current_brt + 10);
+      if (app_ctx.is_editing) {
+        // Validated API: DrvLedBrightnessSet cleanly clamps to 100 max
+        DrvLedBrightnessSet(current_brt + 10);
         // CONTRADICTORY BOOLEAN BRANCH (ACT 5 CLIFFHANGER):
         // Re-enables output without checking has_fault!
-        s_app.is_output_on = true;
+        app_ctx.is_output_on = true;
       }
     } else {
       // Counter-Clockwise
-      if (s_app.is_editing) {
+      if (app_ctx.is_editing) {
         // ACT 4 PAYOFF:
         // Even when passing current_brt - 10 (e.g. 0 - 10 = -10),
-        // drv_led_set_brightness clamps cleanly to 0%! Underflow bug is dead!
-        drv_led_set_brightness(current_brt - 10);
+        // DrvLedBrightnessSet clamps cleanly to 0%! Underflow bug is dead!
+        DrvLedBrightnessSet(current_brt - 10);
         // CONTRADICTORY BOOLEAN BRANCH (ACT 5 CLIFFHANGER):
-        s_app.is_output_on = true;
+        // Re-enables output without checking has_fault!
+        app_ctx.is_output_on = true;
       }
     }
   }
-  s_app.last_enc_a = enc_a;
+  app_ctx.last_enc_a = enc_a;
 
-  hal_gpio_write(HAL_PIN_DBG_INPUT, HAL_GPIO_LOW);
+  HalGpioSet(kHalPinDbgInput, kHalGpioLow);
 
   // --------------------------------------------------------------------------
   // STEP 2: LED DRIVER UPDATE
   // --------------------------------------------------------------------------
-  bool render_output = s_app.is_output_on;
-  if (s_app.has_fault && !s_app.is_output_on) {
+  bool render_output = app_ctx.is_output_on;
+  if (app_ctx.has_fault && !app_ctx.is_output_on) {
     render_output = false;
   }
-  drv_led_render_frame(render_output);
+  DrvLedFrameRender(render_output);
 
   // --------------------------------------------------------------------------
   // STEP 3: DISPLAY DRIVER UPDATE (~95ms blocking transfer)
   // --------------------------------------------------------------------------
   uint8_t screen_mode = 0;
-  if (s_app.has_fault) {
+  if (app_ctx.has_fault) {
     screen_mode = 2; // Fault alert screen
-  } else if (s_app.is_editing) {
+  } else if (app_ctx.is_editing) {
     screen_mode = 1; // Edit brightness screen
   }
-  drv_ssd1306_render(screen_mode, s_app.is_output_on, drv_led_get_brightness(), s_app.is_locked);
+  DrvSsd1306Render(screen_mode, app_ctx.is_output_on, DrvLedBrightnessGet(), app_ctx.is_locked);
 
   // --------------------------------------------------------------------------
   // STEP 4: SUPERLOOP DELAY
   // --------------------------------------------------------------------------
-  hal_delay_ms(20);
+  HalDelayMs(20);
 }
-

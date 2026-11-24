@@ -7,10 +7,10 @@
 #include "app_controller.h"
 
 void setup() {
-  app_init();
+  AppInit();
 }
 
 void loop() {
-  app_update();
+  AppUpdate();
 }
 

@@ -7,26 +7,26 @@
 // LAYER 2 (DRIVER): SSD1306 OLED DRIVER IMPLEMENTATION
 // Encapsulates the SSD1306 command sequences and 1024-byte 1-bpp framebuffer.
 // Never touches hardware registers or Wire directly — all bus traffic routes
-// exclusively through the Layer 3 HAL contract (hal_i2c_write).
+// exclusively through the Layer 3 HAL contract (HalI2cWrite).
 // ============================================================================
 
 #define SSD1306_I2C_ADDR  0x3C
 #define SSD1306_WIDTH     128
 #define SSD1306_HEIGHT    64
 
-static GFXcanvas1 s_canvas(SSD1306_WIDTH, SSD1306_HEIGHT);
+static GFXcanvas1 canvas(SSD1306_WIDTH, SSD1306_HEIGHT);
 
-static bool ssd1306_send_cmd(uint8_t cmd) {
+static bool Ssd1306CmdSend(uint8_t cmd) {
   uint8_t buf[2] = { 0x00, cmd }; // 0x00 = Co=0, D/C#=0 (Command stream)
-  return hal_i2c_write(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  return HalI2cWrite(SSD1306_I2C_ADDR, buf, sizeof(buf));
 }
 
-static bool ssd1306_set_contrast(uint8_t contrast) {
+static bool Ssd1306ContrastSet(uint8_t contrast) {
   uint8_t buf[3] = { 0x00, 0x81, contrast }; // 0x81 = Set Contrast Control
-  return hal_i2c_write(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  return HalI2cWrite(SSD1306_I2C_ADDR, buf, sizeof(buf));
 }
 
-static void ssd1306_flush_framebuffer(void) {
+static void Ssd1306FramebufferFlush(void) {
   // Set column address range (0..127) and page address range (0..7)
   uint8_t addr_cmds[] = {
     0x00,
@@ -35,13 +35,13 @@ static void ssd1306_flush_framebuffer(void) {
   };
   // Early abort: if the display is disconnected/miswired and NACKs or times out,
   // abort immediately instead of stalling across all 64 page chunks!
-  if (!hal_i2c_write(SSD1306_I2C_ADDR, addr_cmds, sizeof(addr_cmds))) {
+  if (!HalI2cWrite(SSD1306_I2C_ADDR, addr_cmds, sizeof(addr_cmds))) {
     return;
   }
 
   // Convert GFXcanvas1 horizontal bitmask into SSD1306 vertical pages
   // and stream 1024 bytes in 16-byte I2C chunks over the 100 kHz HAL bus (~95 ms)
-  const uint8_t *gfx_buf = s_canvas.getBuffer();
+  const uint8_t *gfx_buf = canvas.getBuffer();
   for (uint8_t page = 0; page < 8; page++) {
     for (uint8_t col_base = 0; col_base < SSD1306_WIDTH; col_base += 16) {
       uint8_t packet[17];
@@ -57,7 +57,7 @@ static void ssd1306_flush_framebuffer(void) {
         }
         packet[1 + c] = page_byte;
       }
-      if (!hal_i2c_write(SSD1306_I2C_ADDR, packet, sizeof(packet))) {
+      if (!HalI2cWrite(SSD1306_I2C_ADDR, packet, sizeof(packet))) {
         return; // Abort remaining chunks on bus error/timeout
       }
     }
@@ -66,7 +66,7 @@ static void ssd1306_flush_framebuffer(void) {
 
 extern "C" {
 
-void drv_ssd1306_init(void) {
+void DrvSsd1306Init(void) {
   static const uint8_t init_seq[] = {
     0xAE,       // Display OFF
     0xD5, 0x80, // Set Display Clock Divide Ratio
@@ -86,77 +86,77 @@ void drv_ssd1306_init(void) {
     0xAF        // Display ON
   };
   for (size_t i = 0; i < sizeof(init_seq); i++) {
-    if (!ssd1306_send_cmd(init_seq[i])) {
+    if (!Ssd1306CmdSend(init_seq[i])) {
       break; // Do not stall for 25 seconds on boot if OLED is miswired
     }
   }
-  s_canvas.fillScreen(0);
-  ssd1306_flush_framebuffer();
+  canvas.fillScreen(0);
+  Ssd1306FramebufferFlush();
 }
 
-void drv_ssd1306_render(uint8_t screen_mode, bool is_output_on, int16_t brightness, bool is_locked) {
-  hal_gpio_write(HAL_PIN_DBG_DISPLAY, HAL_GPIO_HIGH);
+void DrvSsd1306Render(uint8_t screen_mode, bool is_output_on, int16_t brightness, bool is_locked) {
+  HalGpioSet(kHalPinDbgDisplay, kHalGpioHigh);
 
-  s_canvas.fillScreen(0);
-  s_canvas.setTextColor(1);
+  canvas.fillScreen(0);
+  canvas.setTextColor(1);
 
   if (screen_mode == 2) {
     // Hardware Fault Alert Screen
-    ssd1306_set_contrast(0xFF);
-    s_canvas.setTextSize(2);
-    s_canvas.setCursor(12, 0);
-    s_canvas.println("! FAULT !");
-    s_canvas.setTextSize(1);
-    s_canvas.drawLine(0, 18, 127, 18, 1);
-    s_canvas.setCursor(0, 24);
-    s_canvas.println("OVER-TEMP / HARDWARE");
-    s_canvas.setCursor(0, 36);
-    s_canvas.print("BRIGHTNESS: ");
-    s_canvas.print(brightness);
-    s_canvas.println("%");
-    s_canvas.setCursor(0, 50);
-    s_canvas.println("Press FAULT to clear");
+    Ssd1306ContrastSet(0xFF);
+    canvas.setTextSize(2);
+    canvas.setCursor(12, 0);
+    canvas.println("! FAULT !");
+    canvas.setTextSize(1);
+    canvas.drawLine(0, 18, 127, 18, 1);
+    canvas.setCursor(0, 24);
+    canvas.println("OVER-TEMP / HARDWARE");
+    canvas.setCursor(0, 36);
+    canvas.print("BRIGHTNESS: ");
+    canvas.print(brightness);
+    canvas.println("%");
+    canvas.setCursor(0, 50);
+    canvas.println("Press FAULT to clear");
   } else if (screen_mode == 1) {
     // Edit Settings Screen
-    ssd1306_set_contrast((uint8_t)(brightness * 255 / 100));
-    s_canvas.setTextSize(1);
-    s_canvas.setCursor(0, 0);
-    s_canvas.println("=== EDIT SETTINGS ===");
-    s_canvas.drawLine(0, 10, 127, 10, 1);
-    s_canvas.setCursor(0, 18);
-    s_canvas.println("LED BRIGHTNESS:");
-    s_canvas.setTextSize(2);
-    s_canvas.setCursor(20, 32);
-    s_canvas.print(brightness);
-    s_canvas.println("%");
-    s_canvas.setTextSize(1);
-    s_canvas.setCursor(0, 52);
-    s_canvas.println("Turn: Adj | SW: Exit");
+    Ssd1306ContrastSet((uint8_t)(brightness * 255 / 100));
+    canvas.setTextSize(1);
+    canvas.setCursor(0, 0);
+    canvas.println("=== EDIT SETTINGS ===");
+    canvas.drawLine(0, 10, 127, 10, 1);
+    canvas.setCursor(0, 18);
+    canvas.println("LED BRIGHTNESS:");
+    canvas.setTextSize(2);
+    canvas.setCursor(20, 32);
+    canvas.print(brightness);
+    canvas.println("%");
+    canvas.setTextSize(1);
+    canvas.setCursor(0, 52);
+    canvas.println("Turn: Adj | SW: Exit");
   } else {
     // Normal Status Screen
-    ssd1306_set_contrast(0xCF);
-    s_canvas.setTextSize(1);
-    s_canvas.setCursor(4, 0);
-    s_canvas.println("SMART LED CONTROLLER");
-    s_canvas.drawLine(0, 10, 127, 10, 1);
-    s_canvas.setCursor(0, 16);
-    s_canvas.print("Output:     ");
-    s_canvas.println(is_output_on ? "ACTIVE" : "DISABLED");
-    s_canvas.setCursor(0, 28);
-    s_canvas.print("Brightness: ");
-    s_canvas.print(brightness);
-    s_canvas.println("%");
-    s_canvas.setCursor(0, 40);
-    s_canvas.print("State:      ");
-    s_canvas.println(is_locked ? "LOCKED" : "READY");
-    s_canvas.setCursor(0, 52);
-    s_canvas.println("Click SW for Settings");
+    Ssd1306ContrastSet(0xCF);
+    canvas.setTextSize(1);
+    canvas.setCursor(4, 0);
+    canvas.println("SMART LED CONTROLLER");
+    canvas.drawLine(0, 10, 127, 10, 1);
+    canvas.setCursor(0, 16);
+    canvas.print("Output:     ");
+    canvas.println(is_output_on ? "ACTIVE" : "DISABLED");
+    canvas.setCursor(0, 28);
+    canvas.print("Brightness: ");
+    canvas.print(brightness);
+    canvas.println("%");
+    canvas.setCursor(0, 40);
+    canvas.print("State:      ");
+    canvas.println(is_locked ? "LOCKED" : "READY");
+    canvas.setCursor(0, 52);
+    canvas.println("Click SW for Settings");
   }
 
   // Pushes 1024-byte framebuffer over 100 kHz I2C via HAL (~95 ms blocking transfer)
-  ssd1306_flush_framebuffer();
+  Ssd1306FramebufferFlush();
 
-  hal_gpio_write(HAL_PIN_DBG_DISPLAY, HAL_GPIO_LOW);
+  HalGpioSet(kHalPinDbgDisplay, kHalGpioLow);
 }
 
 } // extern "C"
